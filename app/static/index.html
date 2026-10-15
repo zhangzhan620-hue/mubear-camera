@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>木熊相机 · 设计学院</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #101014; --panel: #1a1a22; --accent: #ffb03a; --text: #f2efe9;
+}
+body {
+  font-family: "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text);
+  height: 100vh; overflow: hidden; position: relative;
+}
+.mode { position: absolute; inset: 0; display: none; }
+.mode.active { display: flex; }
+
+#logo {
+  position: fixed; right: 28px; bottom: 24px;
+  height: 64px; z-index: 50; opacity: .9; display: none;
+}
+
+/* ---------- 屏保模式 ---------- */
+#screensaver {
+  flex-direction: column; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(255,176,58,.08), transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(255,176,58,.05), transparent 50%),
+    var(--bg);
+}
+#screensaver .grid-deco {
+  position: absolute; inset: 0; opacity: .05; pointer-events: none;
+  background-image:
+    linear-gradient(var(--text) 1px, transparent 1px),
+    linear-gradient(90deg, var(--text) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+#screensaver h1 {
+  font-size: 96px; letter-spacing: 24px; font-weight: 900;
+}
+#screensaver h1 span { color: var(--accent); }
+#screensaver .sub {
+  margin-top: 20px; font-size: 22px; letter-spacing: 12px; color: #888;
+}
+#screensaver .hint {
+  margin-top: 90px; font-size: 30px; letter-spacing: 6px;
+  color: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% {opacity:.45} 50% {opacity:1} }
+#screensaver .ring {
+  margin-top: 40px; width: 120px; height: 120px;
+  border: 3px solid rgba(255,176,58,.4); border-radius: 50%;
+  animation: ripple 2s ease-out infinite;
+}
+@keyframes ripple {
+  0% { transform: scale(.6); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* ---------- 拍摄模式 ---------- */
+#shoot { flex-direction: column; }
+#preview-wrap { flex: 1; position: relative; overflow: hidden; }
+#preview { width: 100%; height: 100%; object-fit: cover; }
+#status {
+  position: absolute; top: 32px; left: 50%; transform: translateX(-50%);
+  background: rgba(16,16,20,.75); backdrop-filter: blur(8px);
+  padding: 16px 48px; border-radius: 40px;
+  font-size: 26px; letter-spacing: 4px; white-space: nowrap;
+  border: 1px solid rgba(255,176,58,.35);
+}
+#countdown {
+  position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 260px; font-weight: 900; color: var(--accent);
+  text-shadow: 0 8px 60px rgba(0,0,0,.9);
+  pointer-events: none;
+}
+#countdown:empty { display: none; }
+
+/* ---------- 结果模式 ---------- */
+#result {
+  flex-direction: row; align-items: center; justify-content: center;
+  gap: 64px; padding: 48px;
+}
+#result-photo {
+  max-width: 46vw; max-height: 78vh; border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+}
+#result-side { display: flex; flex-direction: column; align-items: center; }
+#result-side h2 { font-size: 40px; letter-spacing: 8px; }
+#result-side h2 span { color: var(--accent); }
+#qr-box {
+  margin-top: 32px; background: #fff; padding: 20px; border-radius: 20px;
+}
+#qr-box img { width: 260px; display: block; }
+#result-side .tip {
+  margin-top: 28px; font-size: 24px; letter-spacing: 3px;
+  color: var(--accent); text-align: center; line-height: 1.8;
+}
+#result-side .meta {
+  margin-top: 12px; font-size: 16px; color: #777; letter-spacing: 2px;
+}
+#result-side .back-hint {
+  margin-top: 36px; font-size: 18px; color: #555; letter-spacing: 2px;
+}
+</style>
+</head>
+<body>
+
+<img id="logo" src="/logo.png" alt="" onerror="this.style.display='none'">
+
+<!-- 模式一：屏保 -->
+<div class="mode active" id="screensaver">
+  <div class="grid-deco"></div>
+  <h1>木熊<span>相机</span></h1>
+  <div class="sub">设计学院 · 智能拍摄</div>
+  <div class="ring"></div>
+  <div class="hint">对着镜头比耶或举手<br>自动为你拍摄</div>
+</div>
+
+<!-- 模式二：实时镜头 + 自动拍摄 -->
+<div class="mode" id="shoot">
+  <div id="preview-wrap">
+    <img id="preview" src="/stream" alt="">
+    <div id="status">看到你了，看镜头站稳</div>
+    <div id="countdown"></div>
+  </div>
+</div>
+
+<!-- 模式三：结果 + 扫码 -->
+<div class="mode" id="result">
+  <img id="result-photo" alt="">
+  <div id="result-side">
+    <h2>拍摄<span>完成</span></h2>
+    <div id="qr-box"><img id="result-qr" alt=""></div>
+    <div class="tip">微信扫码 · 浏览器打开<br>即可下载照片</div>
+    <div class="meta" id="result-meta"></div>
+    <div class="back-hint">下一组：对着镜头比耶即可开始</div>
+  </div>
+</div>
+
+<script>
+const modes = {
+  idle: document.getElementById('screensaver'),
+  shoot: document.getElementById('shoot'),
+  result: document.getElementById('result'),
+};
+const status = document.getElementById('status');
+const countdown = document.getElementById('countdown');
+
+let state = 'idle';
+let streak = 0;
+let skipStreak = 0;
+
+function show(name) {
+  for (const k in modes) modes[k].classList.toggle('active', k === name);
+  state = name;
+}
+
+async function presence() {
+  try {
+    const r = await fetch('/api/presence');
+    return await r.json();
+  } catch (e) { return { persons: 0, frontal: 0 }; }
+}
+
+setInterval(async () => {
+  if (state === 'shoot') return;
+  const p = await presence();
+
+  if (state === 'idle') {
+    streak = p.gesture > 0 ? streak + 1 : 0;
+    if (streak >= 2) { streak = 0; startShoot(); }
+  } else if (state === 'result') {
+    if (p.gesture > 0) {
+      skipStreak = skipStreak + 1;
+      if (skipStreak >= 2) { skipStreak = 0; startShoot(); return; }
+    } else {
+      skipStreak = 0;
+    }
+    streak = p.persons === 0 ? streak + 1 : 0;
+    if (streak >= 8) { streak = 0; show('idle'); }
+  }
+}, 400);
+
+let shooting = false;
+
+async function startShoot() {
+  show('shoot');
+  shooting = true;
+  status.textContent = '看到你了，看镜头站稳';
+  countdown.textContent = '';
+
+  const poller = setInterval(async () => {
+    try {
+      const s = await (await fetch('/api/stage')).json();
+      renderStage(s.name);
+    } catch (e) {}
+  }, 120);
+
+  try {
+    const r = await fetch('/capture', { method: 'POST' });
+    const d = await r.json();
+    clearInterval(poller);
+    shooting = false;
+    if (d.accepted === false) {
+      status.textContent = '没通过，比个耶重新开始';
+      setTimeout(() => { if (state === 'shoot') show('idle'); }, 4000);
+    } else {
+      showResult(d);
+    }
+  } catch (e) {
+    clearInterval(poller);
+    shooting = false;
+    show('idle');
+  }
+}
+
+function renderStage(stage) {
+  if (['3', '2', '1', '耶'].includes(stage)) {
+    countdown.textContent = stage;
+    status.textContent = '准备拍摄';
+  } else if (stage === 'shooting') {
+    countdown.textContent = '';
+    status.textContent = '正在拍摄';
+  } else if (stage === 'analyzing') {
+    status.textContent = '分析中';
+  } else if (stage === 'uploading') {
+    status.textContent = '上传中';
+  }
+}
+
+function showResult(d) {
+  const a = d.analysis || {};
+  const t = Date.now();
+  document.getElementById('result-photo').src = `/photo/${d.session_id}/download?t=${t}`;
+  document.getElementById('result-qr').src = `/photo/${d.session_id}/qr.png?t=${t}`;
+  let meta = `检测到 ${a.person_count} 人`;
+  if (a.faces && a.faces.length) {
+    meta += a.all_eyes_open ? ' · 眼睛都睁着' : ' · 有人闭眼';
+    meta += a.all_frontal ? ' · 都正面' : ' · 有人没看镜头';
+  }
+  if (d.retried) meta += ' · 已自动重拍';
+  meta += ' · 链接 4 小时有效';
+  document.getElementById('result-meta').textContent = meta;
+  streak = 0;
+  show('result');
+
+  setTimeout(() => { if (state === 'result') show('idle'); }, 45000);
+}
+</script>
+</body>
+</html>

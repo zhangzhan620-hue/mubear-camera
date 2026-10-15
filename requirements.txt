@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+opencv-contrib-python
+mediapipe
+numpy
+qrcode[pil]
+pillow
+pyttsx3
+ultralytics
+cos-python-sdk-v5
