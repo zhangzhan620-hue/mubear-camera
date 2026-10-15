@@ -1,4 +1,4 @@
-import importlib.util
+import os
 import socket
 import sys
 from pathlib import Path
@@ -53,18 +53,18 @@ PRESIGN_EXPIRE_SECONDS = 4 * 3600
 CLEANUP_AGE_SECONDS = 4 * 3600
 CLEANUP_INTERVAL_SECONDS = 600
 
-_cfg_file = BASE_DIR / "config_local.py"
-if _cfg_file.exists():
-    spec = importlib.util.spec_from_file_location("config_local", _cfg_file)
-    _mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(_mod)
-    COS_SECRET_ID = getattr(_mod, "COS_SECRET_ID", "")
-    COS_SECRET_KEY = getattr(_mod, "COS_SECRET_KEY", "")
-    COS_REGION = getattr(_mod, "COS_REGION", "") or COS_REGION
-    COS_BUCKET = getattr(_mod, "COS_BUCKET", "") or COS_BUCKET
-else:
-    COS_SECRET_ID = ""
-    COS_SECRET_KEY = ""
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _, _v = _line.partition("=")
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
+COS_SECRET_ID = os.environ.get("COS_SECRET_ID", "")
+COS_SECRET_KEY = os.environ.get("COS_SECRET_KEY", "")
+COS_REGION = os.environ.get("COS_REGION", "") or COS_REGION
+COS_BUCKET = os.environ.get("COS_BUCKET", "") or COS_BUCKET
 
 
 def local_ip() -> str:

@@ -5,6 +5,7 @@ build/
 dist/
 data/
 dataset/
+.env
 config_local.py
 *.spec.bak
 .DS_Store

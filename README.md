@@ -20,10 +20,10 @@ python run.py
 
 ## 配置（可选）
 
-如需腾讯云 COS 上传功能，复制配置模板到项目根目录并填入密钥：
+如需腾讯云 COS 上传功能，复制配置模板为 `.env` 并填入密钥（`.env` 不会被提交）：
 
 ```bash
-copy app\config_local.py.example config_local.py
+copy .env.example .env
 ```
 
 不配置也能运行，上传功能自动关闭。
